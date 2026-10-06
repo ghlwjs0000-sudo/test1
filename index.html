@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도표 설명 영어 말하기 수행평가</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root {
+    --paper: #f4f7fa;
+    --grid: #e2e9f0;
+    --ink: #1a2433;
+    --muted: #5b6575;
+    --line: #d4dce5;
+    --card: #ffffff;
+    --plot: #2b5fa8;
+    --plot-soft: #e4ecf7;
+    --ok: #2e7d5b;
+    --ok-soft: #e3f2ea;
+    --rec: #d23c32;
+    --stage: #1e2a3d;
+    --stage-text: #f2f4f7;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    color: var(--ink);
+    line-height: 1.6;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    min-height: 100vh;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--plot); outline-offset: 2px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 20px; background: var(--card); border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand svg { flex: none; }
+  .brand h1 { font-size: 1.05rem; margin: 0; font-weight: 700; }
+  .brand p { margin: 0; font-size: .82rem; color: var(--muted); }
+  .who { display: none; align-items: center; gap: 8px; font-size: .9rem; }
+  .who strong { font-weight: 600; }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
+  .panel {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 24px;
+  }
+  .panel + .panel { margin-top: 16px; }
+  h2 { font-size: 1.25rem; margin: 0 0 4px; }
+  .help { color: var(--muted); margin: 0 0 18px; font-size: .95rem; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 1px solid var(--line); background: var(--card); border-radius: 8px;
+    padding: 10px 16px; cursor: pointer; font-weight: 600; min-height: 44px;
+  }
+  .btn:hover { border-color: var(--plot); }
+  .btn.primary { background: var(--plot); border-color: var(--plot); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; }
+  .btn.small { padding: 6px 12px; min-height: 36px; font-size: .9rem; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .spacer { flex: 1; }
+
+  /* 로그인 */
+  #loginView { max-width: 440px; margin: 40px auto 0; }
+  .field { display: block; margin-bottom: 14px; }
+  .field span { display: block; font-size: .9rem; font-weight: 600; margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; font-size: 1.05rem;
+  }
+  #loginView .btn { width: 100%; margin-top: 6px; }
+
+  /* 단계 탭 */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .step {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--card); cursor: pointer;
+  }
+  .step .num {
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 700; font-size: .9rem;
+    background: var(--paper); border: 1px solid var(--line);
+  }
+  .step .label { font-weight: 600; font-size: .95rem; line-height: 1.3; }
+  .step .state { display: block; font-size: .78rem; color: var(--muted); font-weight: 400; }
+  .step.active { border-color: var(--plot); box-shadow: inset 0 -3px 0 var(--plot); }
+  .step.active .num { background: var(--plot); border-color: var(--plot); color: #fff; }
+  .step.done .num { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .step.done .state { color: var(--ok); }
+
+  section[data-step] { display: none; }
+  section[data-step].show { display: block; }
+
+  /* 1단계: 도표 */
+  .drop {
+    display: grid; place-items: center; text-align: center; gap: 4px;
+    border: 2px dashed var(--line); border-radius: 10px; padding: 28px 16px;
+    cursor: pointer; background: var(--paper);
+  }
+  .drop:hover { border-color: var(--plot); }
+  .drop strong { font-size: 1.05rem; }
+  .drop small { color: var(--muted); }
+  .chart-preview {
+    display: none; margin: 16px 0 0; border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; padding: 8px; text-align: center;
+  }
+  .chart-preview img { max-width: 100%; max-height: 520px; }
+  .status { font-size: .9rem; color: var(--muted); }
+  .status.ok { color: var(--ok); font-weight: 600; }
+  .status.warn { color: #9a5b00; font-weight: 600; }
+
+  /* 2단계: 스크립트 */
+  details.ref { margin-bottom: 12px; }
+  details.ref summary { cursor: pointer; color: var(--plot); font-weight: 600; }
+  details.ref img { display: block; max-width: 100%; max-height: 360px; margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; }
+  textarea#script {
+    width: 100%; min-height: 340px; resize: vertical;
+    padding: 16px; border: 1px solid var(--line); border-radius: 8px;
+    font-family: "Source Serif 4", Georgia, serif; font-size: 1.1rem; line-height: 1.75;
+    background: #fff;
+  }
+  .meta { margin-top: 10px; }
+
+  /* 3단계: 읽기·녹음 */
+  .toolbar { gap: 8px; margin-bottom: 12px; }
+  .toolbar label { display: inline-flex; align-items: center; gap: 6px; font-size: .92rem; }
+  .toolbar input[type=range] { width: 110px; }
+  .stage { display: grid; gap: 12px; }
+  .stage.with-chart { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+  .stage-chart {
+    display: none; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px; align-self: start; text-align: center;
+  }
+  .stage.with-chart .stage-chart { display: block; }
+  .stage-chart img { max-width: 100%; max-height: 52vh; }
+  #prompter {
+    height: 52vh; overflow-y: auto; padding: 28px 32px 40vh;
+    background: var(--stage); color: var(--stage-text); border-radius: 10px;
+    font-family: "Source Serif 4", Georgia, serif; line-height: 1.7;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  #prompter.empty { color: #9aa6b8; font-family: Pretendard, sans-serif; font-size: 1rem !important; }
+
+  .recorder {
+    margin-top: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 10px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+  }
+  .rec-btn {
+    flex: none; width: 76px; height: 76px; border-radius: 50%; border: 4px solid #f3c9c5;
+    background: var(--rec); cursor: pointer; display: grid; place-items: center;
+  }
+  .rec-btn::after { content: ""; width: 26px; height: 26px; border-radius: 50%; background: #fff; transition: border-radius .15s; }
+  .recording .rec-btn::after { border-radius: 4px; }
+  .rec-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .rec-info { flex: 1; min-width: 200px; }
+  .rec-info .big { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .rec-info .hint { color: var(--muted); font-size: .92rem; }
+  .meter { height: 8px; background: var(--paper); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .08s linear; }
+  .dot { display: none; width: 10px; height: 10px; border-radius: 50%; background: var(--rec); margin-right: 6px; vertical-align: middle; }
+  .recording .dot { display: inline-block; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  .review { display: none; margin-top: 12px; padding: 16px; border-radius: 10px; background: var(--plot-soft); }
+  .review audio { width: 100%; margin: 8px 0 12px; }
+  .submitted { display: none; margin-top: 12px; padding: 14px 16px; border-radius: 10px; background: var(--ok-soft); color: #1d5a40; }
+  details.fallback { margin-top: 14px; font-size: .92rem; }
+  details.fallback summary { cursor: pointer; color: var(--muted); }
+  details.fallback p { margin: 8px 0; color: var(--muted); }
+
+  /* 공통 */
+  .busy {
+    position: fixed; inset: 0; background: rgba(26, 36, 51, .45);
+    display: none; place-items: center; z-index: 50;
+  }
+  .busy.show { display: grid; }
+  .busy div { background: #fff; padding: 20px 26px; border-radius: 10px; display: flex; align-items: center; gap: 12px; font-weight: 600; }
+  .spin { width: 22px; height: 22px; border: 3px solid var(--plot-soft); border-top-color: var(--plot); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 8px;
+    background: var(--ink); color: #fff; font-size: .95rem; z-index: 60; display: none;
+  }
+  .toast.show { display: block; }
+  .toast.err { background: #a8281f; }
+  .toast.ok { background: var(--ok); }
+  .hidden { display: none !important; }
+
+  @media (max-width: 720px) {
+    .panel { padding: 18px; }
+    .steps { grid-template-columns: 1fr; }
+    .stage.with-chart { grid-template-columns: 1fr; }
+    .stage-chart img { max-height: 28vh; }
+    #prompter { height: 46vh; padding: 20px 20px 35vh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <rect x="1" y="1" width="32" height="32" rx="6" fill="#e4ecf7"/>
+      <rect x="7" y="18" width="4" height="9" fill="#2b5fa8"/>
+      <rect x="15" y="12" width="4" height="15" fill="#2b5fa8"/>
+      <rect x="23" y="7" width="4" height="20" fill="#2b5fa8"/>
+      <polyline points="7,15 17,9 27,5" fill="none" stroke="#d23c32" stroke-width="2"/>
+    </svg>
+    <div>
+      <h1>도표 설명 영어 말하기</h1>
+      <p>도표 올리기, 스크립트 입력, 보고 읽으며 녹음하기</p>
+    </div>
+  </div>
+  <div class="who" id="who">
+    <span><strong id="whoText"></strong></span>
+    <button class="btn small ghost" id="logoutBtn">학생 변경</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 로그인 -->
+  <div class="panel" id="loginView">
+    <h2>학번과 이름을 입력하세요</h2>
+    <p class="help">처음이면 새로 등록되고, 이전에 저장한 내용이 있으면 그대로 불러옵니다.</p>
+    <label class="field"><span>학번</span>
+      <input id="inId" inputmode="numeric" autocomplete="off" placeholder="예: 20315">
+    </label>
+    <label class="field"><span>이름</span>
+      <input id="inName" autocomplete="off" placeholder="예: 홍길동">
+    </label>
+    <button class="btn primary" id="loginBtn">시작하기</button>
+  </div>
+
+  <!-- 본 화면 -->
+  <div id="appView" class="hidden">
+    <nav class="steps" aria-label="진행 단계">
+      <button class="step" data-go="1"><span class="num">1</span><span class="label">도표 사진 올리기<span class="state" id="st1">아직 안 올림</span></span></button>
+      <button class="step" data-go="2"><span class="num">2</span><span class="label">영어 스크립트 입력<span class="state" id="st2">아직 저장 안 함</span></span></button>
+      <button class="step" data-go="3"><span class="num">3</span><span class="label">보고 읽으며 녹음<span class="state" id="st3">아직 제출 안 함</span></span></button>
+    </nav>
+
+    <!-- 1단계 -->
+    <section data-step="1" class="panel">
+      <h2>도표 사진 올리기</h2>
+      <p class="help">설명할 도표를 사진으로 찍거나 이미지 파일로 올리세요. 글자가 잘 보이도록 똑바로 찍어 주세요.</p>
+      <label class="drop" for="imgInput">
+        <strong>여기를 눌러 도표 사진 선택</strong>
+        <small>휴대폰에서는 카메라로 바로 찍을 수 있어요 (JPG, PNG)</small>
+      </label>
+      <input type="file" id="imgInput" accept="image/*" class="hidden">
+      <div class="chart-preview" id="imgPreviewBox"><img id="imgPreview" alt="올린 도표 미리보기"></div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary" id="imgUploadBtn" disabled>이 사진 저장하기</button>
+        <span class="status" id="imgStatus"></span>
+        <span class="spacer"></span>
+        <button class="btn" data-go="2">다음: 스크립트 입력</button>
+      </div>
+    </section>
+
+    <!-- 2단계 -->
+    <section data-step="2" class="panel">
+      <h2>영어 스크립트 입력</h2>
+      <p class="help">손으로 쓴 스크립트를 그대로 옮겨 적고 저장하세요. 3단계 녹음 화면에 저장된 내용이 대본으로 나옵니다.</p>
+      <details class="ref" id="scriptRef">
+        <summary>내 도표 보기</summary>
+        <img id="scriptRefImg" alt="내가 올린 도표">
+      </details>
+      <textarea id="script" spellcheck="false" autocorrect="off" autocapitalize="sentences"
+        placeholder="The graph shows ..."></textarea>
+      <div class="row meta">
+        <span class="status" id="wordCount">0 words</span>
+        <span class="status" id="scriptStatus"></span>
+        <span class="spacer"></span>
+        <button class="btn primary" id="saveScriptBtn">스크립트 저장하기</button>
+        <button class="btn" data-go="3">다음: 녹음하기</button>
+      </div>
+    </section>
+
+    <!-- 3단계 -->
+    <section data-step="3" class="panel">
+      <h2>보고 읽으며 녹음하기</h2>
+      <p class="help">대본을 보며 연습한 뒤 빨간 버튼을 눌러 녹음하세요. 녹음을 들어 보고 마음에 들면 제출합니다. 다시 제출하면 마지막 제출본이 최종으로 기록됩니다.</p>
+
+      <div class="row toolbar">
+        <button class="btn small" id="fontDown" aria-label="글자 작게">가−</button>
+        <button class="btn small" id="fontUp" aria-label="글자 크게">가+</button>
+        <button class="btn small" id="chartToggle">도표 같이 보기</button>
+        <span class="spacer"></span>
+        <label><input type="checkbox" id="autoScroll"> 자동 스크롤</label>
+        <label>속도 <input type="range" id="speed" min="1" max="10" value="4"></label>
+        <button class="btn small" id="practiceScroll">스크롤 연습</button>
+        <button class="btn small" id="toTop">처음으로</button>
+      </div>
+
+      <div class="stage" id="stage">
+        <figure class="stage-chart" style="margin:0"><img id="stageImg" alt="내 도표"></figure>
+        <div id="prompter" tabindex="0" aria-label="읽을 대본"></div>
+      </div>
+
+      <div class="recorder" id="recorder">
+        <button class="rec-btn" id="recBtn" aria-label="녹음 시작"></button>
+        <div class="rec-info">
+          <div class="big"><span class="dot"></span><span id="timer">0:00</span> <span class="hint" id="limitText">/ 최대 5:00</span></div>
+          <div class="hint" id="recHint">빨간 버튼을 누르면 녹음이 시작됩니다.</div>
+          <div class="meter"><i id="meterBar"></i></div>
+        </div>
+      </div>
+
+      <div class="review" id="review">
+        <strong>녹음을 들어 보세요</strong> <span class="status" id="reviewInfo"></span>
+        <audio id="reviewAudio" controls></audio>
+        <div class="row">
+          <button class="btn" id="discardBtn">다시 녹음하기</button>
+          <button class="btn primary" id="submitAudioBtn">이 녹음 제출하기</button>
+        </div>
+      </div>
+
+      <div class="submitted" id="submitted"></div>
+
+      <details class="fallback" id="fallback">
+        <summary>이 화면에서 녹음이 안 되나요? 녹음 파일 직접 올리기</summary>
+        <p>휴대폰 녹음 앱으로 대본을 읽어 녹음한 뒤 그 파일을 선택하세요. 선택한 파일도 들어 보고 제출할 수 있습니다.</p>
+        <input type="file" id="audioFile" accept="audio/*,.m4a,.mp3,.wav,.webm,.ogg,.aac">
+      </details>
+    </section>
+  </div>
+</main>
+
+<div class="busy" id="busy"><div><span class="spin"></span><span id="busyText">처리 중…</span></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const MAX_SEC = 300;
+  const MAX_AUDIO_MB = 25;
+  const $ = s => document.querySelector(s);
+
+  const state = {
+    id: '', name: '',
+    image: '', pendingImage: '',
+    savedScript: '', dirty: false,
+    tries: 0, audioAt: '', duration: 0,
+    step: 1, fontSize: 30
+  };
+  let rec = { recorder: null, stream: null, chunks: [], mime: '', start: 0, sec: 0, timer: null, ctx: null, raf: null, dataUrl: '', size: 0, active: false };
+  let scrollRaf = null, scrollPos = 0, lastTs = 0;
+
+  /* ── 서버 호출 ── */
+  // ▼ Apps Script 웹 앱 주소(/exec로 끝나는 주소)를 따옴표 안에 붙여 넣으세요.
+  const API_URL = 'https://script.google.com/macros/s/AKfycbx7P4AEr3WybGoieCocigER3JvbySqdOx-bZ3mtLm919_Qc4XNzIDnc-qTpsSAUGzkU3g/exec';
+
+  async function run(fn, ...args) {
+    if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(API_URL)) {
+      throw new Error('index.html의 API_URL에 웹 앱 주소(/exec로 끝남)를 넣어 주세요.');
+    }
+    let res;
+    try {
+      res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: fn, args: args })
+      });
+    } catch (e) {
+      throw new Error('서버에 연결하지 못했어요. 인터넷 연결과 웹 앱 배포 설정(액세스: 모든 사용자)을 확인하세요.');
+    }
+    let j;
+    try { j = await res.json(); }
+    catch (e) { throw new Error('서버 응답을 읽지 못했어요. 웹 앱 배포 설정(액세스: 모든 사용자)을 확인하세요.'); }
+    if (!j.ok) throw new Error(String(j.error).replace(/^(Exception|Error):\s*/, ''));
+    return j.data;
+  }
+
+  /* ── 공통 UI ── */
+  function busy(text) {
+    if (text) { $('#busyText').textContent = text; $('#busy').classList.add('show'); }
+    else { $('#busy').classList.remove('show'); }
+  }
+  let toastTimer = null;
+  function toast(msg, type) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.className = 'toast', type === 'err' ? 6000 : 3500);
+  }
+  function setStatus(sel, text, cls) {
+    const el = $(sel);
+    el.textContent = text;
+    el.className = 'status' + (cls ? ' ' + cls : '');
+  }
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  }
+  function countWords(t) {
+    const m = t.match(/[A-Za-z0-9]+(?:['’\-][A-Za-z0-9]+)*/g);
+    return m ? m.length : 0;
+  }
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error('파일을 읽지 못했습니다.'));
+      r.readAsDataURL(blob);
+    });
+  }
+  function store(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+  function load(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+
+  /* ── 로그인 ── */
+  async function login() {
+    const id = $('#inId').value.replace(/\s/g, '');
+    const name = $('#inName').value.trim();
+    if (!/^\d{4,6}$/.test(id)) return toast('학번을 숫자로 정확히 입력해 주세요.', 'err');
+    if (!name) return toast('이름을 입력해 주세요.', 'err');
+    busy('저장된 내용을 불러오는 중…');
+    try {
+      const d = await run('loadStudent', id, name);
+      state.id = d.id; state.name = d.name;
+      applyData(d);
+      store('chart-speak-id', d.id); store('chart-speak-name', d.name);
+      $('#loginView').classList.add('hidden');
+      $('#appView').classList.remove('hidden');
+      $('#who').style.display = 'flex';
+      $('#whoText').textContent = d.id + ' ' + d.name;
+      goStep(!state.image ? 1 : (!state.savedScript ? 2 : 3));
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally {
+      busy(false);
+    }
+  }
+
+  function applyData(d) {
+    state.image = d.image || '';
+    state.pendingImage = '';
+    showImage(state.image);
+    setStatus('#imgStatus', state.image ? '저장된 도표가 있어요. 바꾸려면 새 사진을 선택하세요.' : '', state.image ? 'ok' : '');
+    $('#imgUploadBtn').disabled = true;
+
+    state.savedScript = d.script || '';
+    $('#script').value = state.savedScript;
+    state.dirty = false;
+    updateCount();
+    setStatus('#scriptStatus', d.scriptAt ? '저장됨 (' + d.scriptAt + ')' : '', d.scriptAt ? 'ok' : '');
+
+    state.tries = d.tries || 0; state.audioAt = d.audioAt || ''; state.duration = d.duration || 0;
+    showSubmitted();
+    updateMarks();
+  }
+
+  function logout() {
+    if (rec.active) return toast('녹음 중에는 바꿀 수 없어요. 먼저 녹음을 멈추세요.', 'err');
+    if ((state.dirty || rec.dataUrl) && !confirm('저장하거나 제출하지 않은 내용이 있어요. 그래도 나갈까요?')) return;
+    resetRecording();
+    Object.assign(state, { id: '', name: '', image: '', pendingImage: '', savedScript: '', dirty: false, tries: 0 });
+    $('#appView').classList.add('hidden');
+    $('#loginView').classList.remove('hidden');
+    $('#who').style.display = 'none';
+  }
+
+  /* ── 단계 이동 ── */
+  async function goStep(n) {
+    if (rec.active) return toast('녹음 중에는 다른 단계로 이동할 수 없어요.', 'err');
+    if (state.step === 2 && n !== 2 && state.dirty) {
+      const ok = await saveScript(true);
+      if (!ok) return;
+    }
+    state.step = n;
+    document.querySelectorAll('section[data-step]').forEach(s => s.classList.toggle('show', s.dataset.step == n));
+    document.querySelectorAll('.step').forEach(b => b.classList.toggle('active', b.dataset.go == n));
+    if (n === 2) {
+      const has = !!state.image;
+      $('#scriptRef').style.display = has ? '' : 'none';
+      if (has) $('#scriptRefImg').src = state.image;
+    }
+    if (n === 3) renderPrompter();
+    window.scrollTo(0, 0);
+  }
+
+  function updateMarks() {
+    const marks = [
+      [1, !!state.image, '저장 완료', '아직 안 올림'],
+      [2, !!state.savedScript, '저장 완료', '아직 저장 안 함'],
+      [3, state.tries > 0, state.tries + '회 제출', '아직 제출 안 함']
+    ];
+    marks.forEach(([n, done, yes, no]) => {
+      document.querySelector('.step[data-go="' + n + '"]').classList.toggle('done', done);
+      $('#st' + n).textContent = done ? yes : no;
+    });
+  }
+
+  /* ── 1단계: 도표 사진 ── */
+  function showImage(src) {
+    $('#imgPreviewBox').style.display = src ? 'block' : 'none';
+    if (src) $('#imgPreview').src = src;
+  }
+
+  function compressImage(file, maxDim = 1800, quality = 0.88) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onerror = () => reject(new Error('사진을 읽지 못했습니다.'));
+      r.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => reject(new Error('이 사진 형식은 열 수 없어요. JPG나 PNG로 올려 주세요.'));
+        img.src = r.result;
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
+  $('#imgInput').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    busy('사진 준비 중…');
+    try {
+      state.pendingImage = await compressImage(f);
+      showImage(state.pendingImage);
+      $('#imgUploadBtn').disabled = false;
+      setStatus('#imgStatus', '아직 저장하지 않았어요. [이 사진 저장하기]를 누르세요.', 'warn');
+    } catch (err) {
+      toast(err.message, 'err');
+    } finally {
+      busy(false);
+    }
+  });
+
+  $('#imgUploadBtn').addEventListener('click', async () => {
+    if (!state.pendingImage) return;
+    busy('도표 사진 저장 중…');
+    try {
+      const r = await run('saveImage', state.id, state.name, state.pendingImage);
+      state.image = state.pendingImage;
+      state.pendingImage = '';
+      $('#imgUploadBtn').disabled = true;
+      setStatus('#imgStatus', '저장 완료 (' + r.savedAt + ')', 'ok');
+      updateMarks();
+      toast('도표 사진을 저장했어요.', 'ok');
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally {
+      busy(false);
+    }
+  });
+
+  /* ── 2단계: 스크립트 ── */
+  function updateCount() {
+    const n = countWords($('#script').value);
+    $('#wordCount').textContent = n + ' words';
+  }
+  $('#script').addEventListener('input', () => {
+    updateCount();
+    state.dirty = $('#script').value.trim() !== state.savedScript.trim();
+    if (state.dirty) setStatus('#scriptStatus', '저장하지 않은 수정 내용이 있어요', 'warn');
+  });
+  $('#script').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveScript(); }
+  });
+
+  async function saveScript(auto) {
+    const text = $('#script').value.trim();
+    if (!text) { if (auto) return true; toast('스크립트를 입력한 뒤 저장하세요.', 'err'); return false; }
+    busy(auto ? '스크립트 자동 저장 중…' : '스크립트 저장 중…');
+    try {
+      const r = await run('saveScript', state.id, state.name, text);
+      state.savedScript = text;
+      state.dirty = false;
+      setStatus('#scriptStatus', '저장됨 (' + r.savedAt + ')', 'ok');
+      updateMarks();
+      toast('스크립트를 저장했어요.', 'ok');
+      return true;
+    } catch (e) {
+      toast(e.message, 'err');
+      return false;
+    } finally {
+      busy(false);
+    }
+  }
+  $('#saveScriptBtn').addEventListener('click', () => saveScript());
+
+  /* ── 3단계: 대본 화면 ── */
+  function renderPrompter() {
+    const p = $('#prompter');
+    if (state.savedScript) {
+      p.textContent = state.savedScript;
+      p.classList.remove('empty');
+    } else {
+      p.textContent = '아직 저장된 스크립트가 없어요. 2단계에서 스크립트를 입력하고 저장하세요.';
+      p.classList.add('empty');
+    }
+    p.style.fontSize = state.fontSize + 'px';
+    p.scrollTop = 0;
+    $('#stageImg').src = state.image || '';
+    $('#chartToggle').disabled = !state.image;
+  }
+  function setFont(delta) {
+    state.fontSize = Math.min(60, Math.max(18, state.fontSize + delta));
+    $('#prompter').style.fontSize = state.fontSize + 'px';
+    store('chart-speak-font', state.fontSize);
+  }
+  $('#fontDown').addEventListener('click', () => setFont(-3));
+  $('#fontUp').addEventListener('click', () => setFont(3));
+  $('#chartToggle').addEventListener('click', () => {
+    const on = $('#stage').classList.toggle('with-chart');
+    $('#chartToggle').textContent = on ? '도표 숨기기' : '도표 같이 보기';
+  });
+  $('#toTop').addEventListener('click', () => { stopScroll(); $('#prompter').scrollTop = 0; });
+
+  function startScroll() {
+    stopScroll();
+    const el = $('#prompter');
+    scrollPos = el.scrollTop; lastTs = 0;
+    const step = ts => {
+      if (lastTs) {
+        if (Math.abs(el.scrollTop - Math.round(scrollPos)) > 2) scrollPos = el.scrollTop; // 손으로 움직이면 따라감
+        scrollPos += Number($('#speed').value) * 7 * (ts - lastTs) / 1000;
+        el.scrollTop = scrollPos;
+      }
+      lastTs = ts;
+      scrollRaf = requestAnimationFrame(step);
+    };
+    scrollRaf = requestAnimationFrame(step);
+    $('#practiceScroll').textContent = '스크롤 멈춤';
+  }
+  function stopScroll() {
+    if (scrollRaf) cancelAnimationFrame(scrollRaf);
+    scrollRaf = null;
+    $('#practiceScroll').textContent = '스크롤 연습';
+  }
+  $('#practiceScroll').addEventListener('click', () => scrollRaf ? stopScroll() : startScroll());
+
+  /* ── 3단계: 녹음 ── */
+  function pickMime() {
+    const list = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    for (const m of list) {
+      try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) {}
+    }
+    return '';
+  }
+
+  function setRecUI(mode) {
+    const box = $('#recorder');
+    box.classList.toggle('recording', mode === 'recording');
+    $('#recBtn').disabled = mode === 'processing' || mode === 'review';
+    $('#recBtn').setAttribute('aria-label', mode === 'recording' ? '녹음 멈추기' : '녹음 시작');
+    $('#review').style.display = mode === 'review' ? 'block' : 'none';
+    const hints = {
+      idle: '빨간 버튼을 누르면 녹음이 시작됩니다.',
+      recording: '녹음 중입니다. 다 읽었으면 버튼을 다시 누르세요.',
+      processing: '녹음을 정리하는 중…',
+      review: '아래에서 녹음을 들어 보고 제출하세요.'
+    };
+    $('#recHint').textContent = hints[mode];
+    if (mode === 'idle') $('#timer').textContent = '0:00';
+  }
+
+  async function startRec() {
+    if (!state.savedScript) return toast('먼저 2단계에서 스크립트를 저장하세요.', 'err');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      $('#fallback').open = true;
+      return toast('이 브라우저에서는 바로 녹음할 수 없어요. 아래에서 녹음 파일을 직접 올리세요.', 'err');
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      $('#fallback').open = true;
+      const reasons = {
+        NotAllowedError: '마이크 권한이 막혀 있어요. 주소창 왼쪽 아이콘에서 마이크를 "허용"으로 바꾸세요.',
+        NotFoundError: '연결된 마이크를 찾지 못했어요. 마이크나 이어폰이 꽂혀 있는지 확인하세요.',
+        NotReadableError: '다른 프로그램이 마이크를 쓰고 있어요. 줌, 녹음기 등을 닫고 다시 시도하세요.',
+        SecurityError: '이 화면에서는 마이크 사용이 차단되어 있어요. 아래에서 녹음 파일을 직접 올리세요.'
+      };
+      return toast((reasons[e.name] || '마이크를 쓸 수 없어요.') + ' [' + e.name + ']', 'err');
+    }
+    const mime = pickMime();
+    let recorder;
+    try { recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+    catch (e) { recorder = new MediaRecorder(stream); }
+
+    rec.recorder = recorder; rec.stream = stream; rec.chunks = [];
+    rec.mime = recorder.mimeType || mime || 'audio/webm';
+    rec.start = Date.now(); rec.sec = 0; rec.dataUrl = ''; rec.active = true;
+    recorder.ondataavailable = e => { if (e.data && e.data.size) rec.chunks.push(e.data); };
+    recorder.onstop = finishRec;
+    recorder.start(1000);
+
+    startMeter(stream);
+    rec.timer = setInterval(tick, 250);
+    tick();
+    setRecUI('recording');
+    if ($('#autoScroll').checked) { $('#prompter').scrollTop = 0; startScroll(); }
+  }
+
+  function tick() {
+    rec.sec = (Date.now() - rec.start) / 1000;
+    $('#timer').textContent = fmtTime(rec.sec);
+    if (rec.sec >= MAX_SEC) {
+      stopRec();
+      toast('최대 녹음 시간(5분)이 되어 자동으로 멈췄어요.');
+    }
+  }
+
+  function stopRec() {
+    if (!rec.recorder || rec.recorder.state === 'inactive') return;
+    clearInterval(rec.timer);
+    rec.sec = (Date.now() - rec.start) / 1000;
+    rec.recorder.stop();
+    rec.stream.getTracks().forEach(t => t.stop());
+    rec.active = false;
+    stopMeter();
+    stopScroll();
+    setRecUI('processing');
+  }
+
+  async function finishRec() {
+    const blob = new Blob(rec.chunks, { type: rec.mime });
+    rec.chunks = [];
+    if (!blob.size || rec.sec < 1.5) {
+      setRecUI('idle');
+      return toast('녹음이 너무 짧거나 소리가 없어요. 다시 녹음하세요.', 'err');
+    }
+    await prepareReview(blob, rec.sec);
+  }
+
+  async function prepareReview(blob, sec) {
+    if (blob.size > MAX_AUDIO_MB * 1024 * 1024) {
+      setRecUI('idle');
+      return toast('파일이 너무 커요(최대 ' + MAX_AUDIO_MB + 'MB).', 'err');
+    }
+    rec.size = blob.size;
+    rec.sec = sec;
+    rec.dataUrl = await blobToDataUrl(blob);
+    $('#reviewAudio').src = rec.dataUrl;
+    $('#reviewInfo').textContent = '(길이 ' + (sec ? fmtTime(sec) : '확인 불가') + ', ' + (blob.size / 1048576).toFixed(1) + 'MB)';
+    $('#timer').textContent = sec ? fmtTime(sec) : '0:00';
+    setRecUI('review');
+  }
+
+  function resetRecording() {
+    if (rec.active) stopRec();
+    rec.dataUrl = ''; rec.size = 0; rec.sec = 0;
+    $('#reviewAudio').removeAttribute('src');
+    setRecUI('idle');
+  }
+
+  $('#recBtn').addEventListener('click', () => rec.active ? stopRec() : startRec());
+  $('#discardBtn').addEventListener('click', resetRecording);
+
+  $('#submitAudioBtn').addEventListener('click', async () => {
+    if (!rec.dataUrl) return;
+    busy('음성 저장 중… 창을 닫지 마세요');
+    try {
+      const r = await run('saveAudio', state.id, state.name, rec.dataUrl, Math.round(rec.sec));
+      state.tries = r.tries; state.audioAt = r.savedAt; state.duration = r.duration;
+      resetRecording();
+      showSubmitted();
+      updateMarks();
+      toast('녹음을 제출했어요.', 'ok');
+    } catch (e) {
+      toast(e.message + ' 녹음은 그대로 남아 있으니 다시 제출해 보세요.', 'err');
+    } finally {
+      busy(false);
+    }
+  });
+
+  function showSubmitted() {
+    const box = $('#submitted');
+    if (!state.tries) { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    box.textContent = '제출 완료: 지금까지 ' + state.tries + '회 제출했어요. 마지막 제출 ' + state.audioAt +
+      (state.duration ? ' (길이 ' + fmtTime(state.duration) + ')' : '') +
+      '. 다시 녹음해서 제출하면 마지막 제출본이 최종으로 기록됩니다.';
+  }
+
+  /* 마이크 소리 크기 표시 */
+  function startMeter(stream) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AC();
+      const an = ctx.createAnalyser();
+      an.fftSize = 512;
+      ctx.createMediaStreamSource(stream).connect(an);
+      const buf = new Uint8Array(an.fftSize);
+      rec.ctx = ctx;
+      const draw = () => {
+        an.getByteTimeDomainData(buf);
+        let sum = 0;
+        for (let i = 0; i < buf.length; i++) { const x = (buf[i] - 128) / 128; sum += x * x; }
+        $('#meterBar').style.width = Math.min(100, Math.sqrt(sum / buf.length) * 320) + '%';
+        rec.raf = requestAnimationFrame(draw);
+      };
+      draw();
+    } catch (e) { /* 표시만 생략 */ }
+  }
+  function stopMeter() {
+    if (rec.raf) cancelAnimationFrame(rec.raf);
+    rec.raf = null;
+    if (rec.ctx) { rec.ctx.close().catch(() => {}); rec.ctx = null; }
+    $('#meterBar').style.width = '0%';
+  }
+
+  /* 녹음 파일 직접 올리기 */
+  function guessAudioType(name) {
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    return { m4a: 'audio/mp4', mp4: 'audio/mp4', mp3: 'audio/mpeg', wav: 'audio/wav', webm: 'audio/webm', ogg: 'audio/ogg', aac: 'audio/aac', '3gp': 'audio/3gpp', amr: 'audio/amr' }[ext] || '';
+  }
+  function getDuration(src) {
+    return new Promise(resolve => {
+      const a = new Audio();
+      const done = v => resolve(isFinite(v) ? v : 0);
+      a.preload = 'metadata';
+      a.onloadedmetadata = () => done(a.duration);
+      a.onerror = () => done(0);
+      setTimeout(() => done(0), 4000);
+      a.src = src;
+    });
+  }
+  $('#audioFile').addEventListener('change', async e => {
+    let f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    if (!state.savedScript) return toast('먼저 2단계에서 스크립트를 저장하세요.', 'err');
+    let type = f.type;
+    if (!type || !/^(audio\/|video\/(webm|mp4))/.test(type)) type = guessAudioType(f.name);
+    if (!type) return toast('음성 파일만 올릴 수 있어요 (m4a, mp3, wav 등).', 'err');
+    if (rec.active) stopRec();
+    busy('파일 준비 중…');
+    try {
+      const blob = f.type === type ? f : new Blob([f], { type: type });
+      const url = await blobToDataUrl(blob);
+      const sec = await getDuration(url);
+      await prepareReview(blob, sec);
+    } catch (err) {
+      toast(err.message, 'err');
+    } finally {
+      busy(false);
+    }
+  });
+
+  /* ── 시작 ── */
+  document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => goStep(Number(b.dataset.go))));
+  $('#loginBtn').addEventListener('click', login);
+  $('#inName').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  $('#inId').addEventListener('keydown', e => { if (e.key === 'Enter') $('#inName').focus(); });
+  $('#logoutBtn').addEventListener('click', logout);
+  window.addEventListener('beforeunload', e => {
+    if (state.dirty || rec.active || rec.dataUrl) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  (function init() {
+    const f = Number(load('chart-speak-font'));
+    if (f) state.fontSize = f;
+    const id = load('chart-speak-id'), nm = load('chart-speak-name');
+    if (id) $('#inId').value = id;
+    if (nm) $('#inName').value = nm;
+  })();
+</script>
+</body>
+</html>
