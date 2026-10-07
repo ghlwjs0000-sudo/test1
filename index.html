@@ -165,7 +165,7 @@
   .bar.warn i { background: var(--rec); }
 
   /* 녹화 목록 */
-  .takes-area { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; margin-top: 20px; }
+  .takes-area { margin-top: 20px; max-width: 720px; }
   .takes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .take {
     display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
@@ -180,9 +180,12 @@
   .take .tag { font-size: .75rem; font-weight: 700; color: var(--ok); background: var(--ok-soft); padding: 2px 8px; border-radius: 10px; }
   .take .tag.bad { color: var(--rec); background: var(--rec-soft); }
   .empty-takes { color: var(--muted); font-size: .95rem; padding: 14px; border: 1px dashed var(--line); border-radius: 10px; background: #fff; }
-  .viewer { background: var(--stage); border-radius: 10px; overflow: hidden; aspect-ratio: 4 / 3; display: grid; place-items: center; color: #9aa6b8; font-size: .95rem; }
-  .viewer video { width: 100%; height: 100%; background: #000; display: block; }
-  .viewer-title { font-size: .9rem; color: var(--muted); margin: 6px 2px 0; }
+  /* 다시 보기 창 */
+  .modal { position: fixed; inset: 0; background: rgba(26, 36, 51, .7); display: none; place-items: center; z-index: 40; padding: 16px; }
+  .modal.show { display: grid; }
+  .modal-box { background: #fff; border-radius: 12px; padding: 16px; width: 100%; max-width: 760px; display: grid; gap: 12px; }
+  .modal-box video { width: 100%; max-height: 68vh; background: #000; border-radius: 8px; display: block; }
+  .player-err { margin: 0; padding: 14px; border-radius: 8px; background: var(--rec-soft); color: #8f2a22; font-weight: 600; }
   .submit-row { margin-top: 14px; }
   .submitted { display: none; margin-top: 14px; padding: 14px 16px; border-radius: 10px; background: var(--ok-soft); color: #1d5a40; }
   details.fallback { margin-top: 18px; font-size: .92rem; }
@@ -208,7 +211,7 @@
   @media (max-width: 760px) {
     .panel { padding: 18px; }
     .steps { grid-template-columns: 1fr; }
-    .studio, .takes-area { grid-template-columns: 1fr; }
+    .studio { grid-template-columns: 1fr; }
     .chart-box img { max-height: 32vh; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -309,19 +312,12 @@
       </div>
 
       <div class="takes-area">
-        <div>
-          <h3>내 녹화 영상</h3>
-          <ul class="takes" id="takes"></ul>
-          <div class="submit-row">
-            <button class="btn primary" id="submitBtn" disabled>제출할 영상을 골라 주세요</button>
-          </div>
-          <div class="submitted" id="submitted"></div>
+        <h3>내 녹화 영상</h3>
+        <ul class="takes" id="takes"></ul>
+        <div class="submit-row">
+          <button class="btn primary" id="submitBtn" disabled>제출할 영상을 골라 주세요</button>
         </div>
-        <div>
-          <h3>다시 보기</h3>
-          <div class="viewer" id="viewer"><span>목록에서 [보기]를 누르면 여기에서 재생돼요.</span></div>
-          <p class="viewer-title" id="viewerTitle"></p>
-        </div>
+        <div class="submitted" id="submitted"></div>
       </div>
 
       <details class="fallback" id="fallback">
@@ -332,6 +328,15 @@
     </section>
   </div>
 </main>
+
+<div class="modal" id="player" role="dialog" aria-modal="true" aria-labelledby="playerTitle">
+  <div class="modal-box">
+    <div class="row"><strong id="playerTitle"></strong><span class="spacer"></span><button class="btn small" id="playerClose">닫기</button></div>
+    <video id="playerVideo" controls playsinline preload="auto"></video>
+    <p class="player-err hidden" id="playerErr"></p>
+    <div class="row"><span class="status" id="playerMeta"></span><span class="spacer"></span><button class="btn primary" id="playerPick">이 영상으로 고르기</button></div>
+  </div>
+</div>
 
 <div class="busy" id="busy"><div><span class="spin"></span><span id="busyText">처리 중…</span></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -353,7 +358,6 @@
   let takes = [];               // { no, label, blob, url, sec, size, at, uploaded, tooBig, submitted }
   let recCount = 0;
   let pickedNo = null;
-  let viewingNo = null;
   let sessionSubmitted = false;
 
   /* ── 서버 호출 ── */
@@ -600,7 +604,14 @@
 
   /* ── 2단계: 녹화 ── */
   function pickMime() {
-    const list = ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm', 'video/mp4;codecs=avc1,mp4a', 'video/mp4'];
+    // 아이폰·아이패드·맥 사파리는 webm으로 녹화돼도 재생을 못 하는 경우가 있어 mp4를 먼저 씀
+    const ua = navigator.userAgent;
+    const apple = /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+      (/Safari/.test(ua) && !/Chrome|Chromium|CriOS|Edg|Android/.test(ua));
+    const webm = ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm'];
+    const mp4 = ['video/mp4;codecs=avc1,mp4a', 'video/mp4'];
+    const list = apple ? mp4.concat(webm) : webm.concat(mp4);
     for (const m of list) {
       try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) {}
     }
@@ -638,7 +649,7 @@
     r.onstop = finishRec;
     r.start(1000);
 
-    if (viewingNo !== null) { const v = $('#viewer video'); if (v) v.pause(); }
+    closePlayer();
     cam.start = performance.now();
     cam.sec = 0;
     cam.active = true;
@@ -679,34 +690,34 @@
 
   async function finishRec() {
     const type = baseMime(cam.mime) || 'video/webm';
-    let blob = new Blob(cam.chunks, { type: type });
+    const raw = new Blob(cam.chunks, { type: type });
+    let blob = raw;
     cam.chunks = [];
     const sec = cam.sec;
     $('#timer').textContent = '0:00';
     $('#recHint').textContent = '빨간 버튼을 누르면 새로 녹화합니다.';
-    if (!blob.size || sec < 2) return toast('녹화가 너무 짧아요. 다시 녹화하세요.', 'err');
+    if (!raw.size || sec < 2) return toast('녹화가 너무 짧아요. 다시 녹화하세요.', 'err');
     // 크롬 녹화 영상에 길이 정보를 넣어 줌 (드라이브에서 재생·이동이 잘 되도록)
     if (type === 'video/webm' && window.ysFixWebmDuration) {
       try { blob = new Blob([await ysFixWebmDuration(blob, Math.round(sec * 1000), { logger: false })], { type: type }); } catch (e) {}
     }
     recCount++;
-    addTake(blob, sec, recCount + '번째 녹화', false);
+    addTake(blob, sec, recCount + '번째 녹화', false, blob === raw ? null : raw);
   }
 
   /* ── 녹화 목록 ── */
   let takeSeq = 0;
-  function addTake(blob, sec, label, uploaded) {
+  function addTake(blob, sec, label, uploaded, raw) {
     takeSeq++;
     const t = {
       no: takeSeq, label: label, blob: blob, url: URL.createObjectURL(blob),
       sec: sec, size: blob.size, at: new Date(), uploaded: uploaded,
-      tooBig: blob.size > MAX_VIDEO_MB * 1048576, submitted: false
+      tooBig: blob.size > MAX_VIDEO_MB * 1048576, submitted: false, raw: raw || null
     };
     takes.push(t);
-    view(t.no);
     renderTakes();
     if (t.tooBig) toast('이 영상은 ' + mb(t.size) + 'MB라서 제출할 수 없어요(최대 ' + MAX_VIDEO_MB + 'MB).', 'err');
-    else toast(label + ' 영상이 목록에 추가됐어요. 다시 보고 제출할 영상을 고르세요.', 'ok');
+    else toast(label + ' 영상이 목록에 추가됐어요. [▶ 보기]로 다시 볼 수 있어요.', 'ok');
   }
 
   function renderTakes() {
@@ -720,7 +731,7 @@
     }
     takes.forEach(t => {
       const li = document.createElement('li');
-      li.className = 'take' + (t.no === viewingNo ? ' viewing' : '') + (t.no === pickedNo ? ' picked' : '');
+      li.className = 'take' + (t.no === pickedNo ? ' picked' : '');
 
       const lab = document.createElement('label');
       const radio = document.createElement('input');
@@ -740,7 +751,7 @@
       if (t.tooBig) { const tag = document.createElement('span'); tag.className = 'tag bad'; tag.textContent = '용량 초과'; li.appendChild(tag); }
 
       const play = document.createElement('button');
-      play.className = 'btn small'; play.textContent = '보기';
+      play.className = 'btn small'; play.textContent = '▶ 보기';
       play.addEventListener('click', () => view(t.no));
       const del = document.createElement('button');
       del.className = 'btn small danger'; del.textContent = '삭제';
@@ -755,31 +766,64 @@
     btn.textContent = picked ? '「' + picked.label + '」 제출하기' : '제출할 영상을 골라 주세요';
   }
 
+  /* 다시 보기 창 */
+  let playerNo = null;
   function view(no) {
     const t = takes.find(x => x.no === no);
-    const box = $('#viewer');
-    box.innerHTML = '';
-    if (!t) {
-      viewingNo = null;
-      const s = document.createElement('span');
-      s.textContent = '목록에서 [보기]를 누르면 여기에서 재생돼요.';
-      box.appendChild(s);
-      $('#viewerTitle').textContent = '';
-      return;
-    }
-    viewingNo = no;
-    const v = document.createElement('video');
-    v.controls = true; v.playsInline = true; v.src = t.url;
-    box.appendChild(v);
-    $('#viewerTitle').textContent = t.label + ' (길이 ' + fmtTime(t.sec) + ')';
-    renderTakes();
+    if (!t) return;
+    playerNo = no;
+    const v = $('#playerVideo');
+    $('#playerTitle').textContent = t.label;
+    $('#playerMeta').textContent = '길이 ' + fmtTime(t.sec) + '   ' + mb(t.size) + 'MB';
+    $('#playerErr').classList.add('hidden');
+    v.classList.remove('hidden');
+    $('#playerPick').disabled = t.tooBig;
+    $('#playerPick').textContent = t.no === pickedNo ? '이 영상을 골랐어요' : '이 영상으로 고르기';
+    v.onerror = () => {
+      // 길이 보정한 파일이 이 브라우저에서 안 열리면 원본으로 다시 시도
+      if (t.raw && !t.usingRaw) {
+        URL.revokeObjectURL(t.url);
+        t.blob = t.raw; t.size = t.raw.size; t.url = URL.createObjectURL(t.raw); t.usingRaw = true;
+        v.src = t.url;
+        return;
+      }
+      v.classList.add('hidden');
+      $('#playerErr').textContent = '이 기기에서는 영상을 재생할 수 없어요. 크롬 브라우저로 열어 다시 녹화해 보세요. (제출은 할 수 있어요)';
+      $('#playerErr').classList.remove('hidden');
+    };
+    v.src = t.url;
+    $('#player').classList.add('show');
+    $('#playerClose').focus();
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {});
   }
+
+  function closePlayer() {
+    const v = $('#playerVideo');
+    v.pause();
+    v.onerror = null;
+    v.removeAttribute('src');
+    v.load();
+    $('#player').classList.remove('show');
+    playerNo = null;
+  }
+
+  $('#playerClose').addEventListener('click', closePlayer);
+  $('#player').addEventListener('click', e => { if (e.target.id === 'player') closePlayer(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && playerNo !== null) closePlayer(); });
+  $('#playerPick').addEventListener('click', () => {
+    if (playerNo === null) return;
+    pickedNo = playerNo;
+    closePlayer();
+    renderTakes();
+    toast('제출할 영상으로 골랐어요. 아래 제출 버튼을 누르면 제출됩니다.', 'ok');
+  });
 
   function removeTake(no) {
     const t = takes.find(x => x.no === no);
     if (!t) return;
     if (!confirm('「' + t.label + '」 영상을 지울까요? 지운 영상은 되살릴 수 없어요.' + (t.submitted ? '\n(이미 제출한 영상은 제출 기록에 그대로 남아요.)' : ''))) return;
-    if (viewingNo === no) view(null);
+    if (playerNo === no) closePlayer();
     URL.revokeObjectURL(t.url);
     takes = takes.filter(x => x.no !== no);
     if (pickedNo === no) pickedNo = null;
@@ -788,8 +832,8 @@
 
   function clearTakes() {
     takes.forEach(t => URL.revokeObjectURL(t.url));
+    closePlayer();
     takes = []; pickedNo = null; recCount = 0;
-    view(null);
     renderTakes();
   }
 
